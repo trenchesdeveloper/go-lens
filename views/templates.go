@@ -21,7 +21,7 @@ func Parse(filePath string) (Template, error) {
 	return Template{htmlTpl: tpl}, nil
 }
 
-func (t Template) executeTemplate(w http.ResponseWriter, data interface{}) {
+func (t Template) Execute(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	err := t.htmlTpl.Execute(w, data)

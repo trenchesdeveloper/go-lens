@@ -9,6 +9,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/trenchesdeveloper/lenslocked/controllers"
+	"github.com/trenchesdeveloper/lenslocked/views"
 )
 
 func executeTemplate(w http.ResponseWriter, r *http.Request, templateName string, data interface{}) {
@@ -41,6 +43,14 @@ func contactHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	r := chi.NewRouter()
+	tpl, err := views.Parse(filepath.Join("templates", "home.gohtml"))
+	if err != nil {
+		panic(err)
+	}
+
+	r.Get("/", controllers.StaticHandler(tpl))
+
+
 	r.Use(middleware.Logger)
 	r.Get("/", homeHandler)
 	r.Get("/contact", contactHandler)
