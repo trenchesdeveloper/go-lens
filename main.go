@@ -15,7 +15,9 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Get("/", controllers.StaticHandler(
-		views.Must(views.ParseFS(templates.FS, "home.gohtml", "tailwind.gohtml"))))
+		views.Must(
+			views.ParseFS(
+				templates.FS, "home.gohtml", "tailwind.gohtml"))))
 
 	r.Get("/contact", controllers.StaticHandler(
 		views.Must(views.ParseFS(templates.FS, "contact.gohtml", "tailwind.gohtml"))))
@@ -23,8 +25,11 @@ func main() {
 	r.Get("/faq", controllers.FAQ(
 		views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))))
 
-	r.Get("/signup", controllers.FAQ(
-		views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))))
+	users := controllers.Users{}
+
+	users.Templates.New = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))
+
+	r.Get("/signup", users.New)
 
 	fmt.Println("Server is running on port 3000")
 
