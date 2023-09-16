@@ -2,58 +2,26 @@ package main
 
 import (
 	"fmt"
-	"html/template"
-	"log"
 	"net/http"
-	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/trenchesdeveloper/lenslocked/controllers"
+	"github.com/trenchesdeveloper/lenslocked/templates"
 	"github.com/trenchesdeveloper/lenslocked/views"
 )
 
-func executeTemplate(w http.ResponseWriter, r *http.Request, templateName string, data interface{}) {
-	w.Header().Set("Content-Type", "text/html")
-	filePath := filepath.Join("templates", templateName)
-	tpl, err := template.ParseFiles(filePath)
-
-	if(err != nil){
-		log.Printf("Error parsing template: %v", err)
-		http.Error(w, "Error Parsing Template", http.StatusInternalServerError)
-		return
-	}
-
-	err = tpl.Execute(w, data)
-
-	if(err != nil){
-		log.Printf("Error executing template: %v", err)
-		http.Error(w, "Error Executing Template", http.StatusInternalServerError)
-		return
-	}
-}
-
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	executeTemplate(w, r, "home.gohtml", nil)
-}
-
-func contactHandler(w http.ResponseWriter, r *http.Request) {
-	executeTemplate(w, r, "contact.gohtml", nil)
-}
-
 func main() {
 	r := chi.NewRouter()
-	tpl, err := views.Parse(filepath.Join("templates", "home.gohtml"))
-	if err != nil {
-		panic(err)
-	}
-
-	r.Get("/", controllers.StaticHandler(tpl))
-
-
 	r.Use(middleware.Logger)
-	r.Get("/", homeHandler)
-	r.Get("/contact", contactHandler)
+	r.Get("/", controllers.StaticHandler(
+		views.Must(views.ParseFS(templates.FS, "home.gohtml"))))
+
+	r.Get("/contact", controllers.StaticHandler(
+		views.Must(views.ParseFS(templates.FS, "contact.gohtml"))))
+
+	r.Get("/faq", controllers.FAQ(
+		views.Must(views.ParseFS(templates.FS, "faq.gohtml"))))
 
 	fmt.Println("Server is running on port 3000")
 
