@@ -23,6 +23,9 @@ func main() {
 	r.Get("/faq", controllers.FAQ(
 		views.Must(views.ParseFS(templates.FS, "faq.gohtml", "tailwind.gohtml"))))
 
+	r.Get("/signup", controllers.FAQ(
+		views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))))
+
 	fmt.Println("Server is running on port 3000")
 
 	http.ListenAndServe(":3000", r)
