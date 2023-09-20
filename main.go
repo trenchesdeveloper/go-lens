@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// create a new UserService
-	userService := models.UserService {
+	userService := models.UserService{
 		DB: db,
 	}
 
@@ -48,10 +48,13 @@ func main() {
 	}
 
 	users.Templates.New = views.Must(views.ParseFS(templates.FS, "signup.gohtml", "tailwind.gohtml"))
+	users.Templates.SignIn = views.Must(views.ParseFS(templates.FS, "signin.gohtml", "tailwind.gohtml"))
 
 	r.Get("/signup", users.New)
-
+	r.Get("/signin", users.SignIn)
 	r.Post("/users", users.Create)
+	r.Post("/signin", users.ProcessSignIn)
+	r.Get("/users/me", users.CurrentUser)
 
 	fmt.Println("Server is running on port 3000")
 
