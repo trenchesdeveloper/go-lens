@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 	"github.com/trenchesdeveloper/lenslocked/controllers"
 	"github.com/trenchesdeveloper/lenslocked/models"
 	"github.com/trenchesdeveloper/lenslocked/templates"
@@ -56,7 +57,13 @@ func main() {
 	r.Post("/signin", users.ProcessSignIn)
 	r.Get("/users/me", users.CurrentUser)
 
+	CSRF := csrf.Protect(
+			[]byte("32-byte-long-auth-key"),
+			// TODO: change this to true in production
+			csrf.Secure(false),
+		)
+
 	fmt.Println("Server is running on port 3000")
 
-	http.ListenAndServe(":3000", r)
+	http.ListenAndServe(":3000", CSRF(r))
 }
