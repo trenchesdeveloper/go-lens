@@ -44,26 +44,60 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 		TokenHash: ss.hash(token),
 	}
 
-	row := ss.DB.QueryRow("INSERT INTO sessions (user_id, token_hash) VALUES ($1, $2) RETURNING id", session.UserID, session.TokenHash)
+	row := ss.DB.QueryRow("UPDATE sessions SET token_hash = $1 WHERE user_id = $2 RETURNING id", session.TokenHash, session.UserID)
 
 	if err := row.Scan(&session.ID); err != nil {
-		return nil, fmt.Errorf("create: %w", err)
+		// check if the error is sql.ErrNoRows
+		if err == sql.ErrNoRows {
+			// no session found, so create one
+			row := ss.DB.QueryRow("INSERT INTO sessions (user_id, token_hash) VALUES ($1, $2) RETURNING id", session.UserID, session.TokenHash)
+
+			if err := row.Scan(&session.ID); err != nil {
+				return nil, fmt.Errorf("create: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("create: %w", err)
+		}
 	}
 
-	
+
+
+
 	return &session, nil
 }
 
 func (ss *SessionService) User(token string) (*User, error) {
+	// hash the token
+	tokenHash := ss.hash(token)
+	// query the db for the session
+	row := ss.DB.QueryRow("SELECT user_id FROM sessions WHERE token_hash = $1", tokenHash)
+
 	var user User
+	if err := row.Scan(&user.ID); err != nil {
+		return nil, fmt.Errorf("user: %w", err)
+	}
 
-	row := ss.DB.QueryRow("SELECT users.id, users.email FROM users JOIN sessions ON users.id = sessions.user_id WHERE sessions.token_hash = $1", token)
+	// get the user from the db
 
-	if err := row.Scan(&user.ID, &user.Email); err != nil {
-		return nil, err
+	row = ss.DB.QueryRow("SELECT email, password_hash FROM users WHERE id = $1", user.ID)
+
+	if err := row.Scan(&user.Email, &user.PasswordHash); err != nil {
+		return nil, fmt.Errorf("user: %w", err)
 	}
 
 	return &user, nil
+}
+
+func (ss *SessionService) Delete(token string) error {
+	tokenHash := ss.hash(token)
+
+	_, err := ss.DB.Exec("DELETE FROM sessions WHERE token_hash = $1", tokenHash)
+
+	if err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
 }
 
 func (ss *SessionService) hash(token string) string {

@@ -11,7 +11,7 @@ import (
 type User struct {
 	ID       int    `json:"id"`
 	Email    string `json:"email"`
-	Password string `json:"password"`
+	PasswordHash string `json:"password"`
 }
 
 type UserService struct {
@@ -30,7 +30,7 @@ func (us *UserService) Create(email, password string) (*User, error) {
 
 	user := User{
 		Email:    email,
-		Password: passwordHash,
+		PasswordHash: passwordHash,
 	}
 
 	rows := us.DB.QueryRow("INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id", email, passwordHash)
@@ -51,7 +51,7 @@ func (us *UserService) Authenticate(email, password string) (*User, error) {
 	}
 	row := us.DB.QueryRow("SELECT id, password_hash FROM users WHERE email = $1", email)
 
-	if err := row.Scan(&user.ID, &user.Password); err != nil {
+	if err := row.Scan(&user.ID, &user.PasswordHash); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("authenticate: %w", err)
 		}
@@ -59,7 +59,7 @@ func (us *UserService) Authenticate(email, password string) (*User, error) {
 	}
 
 	// check if the password is correct
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			return nil, fmt.Errorf("authenticate: %w", err)
 		}
