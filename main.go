@@ -61,10 +61,11 @@ func main() {
 	r.Get("/signin", users.SignIn)
 	r.Post("/users", users.Create)
 	r.Post("/signin", users.ProcessSignIn)
+	r.Post("/signout", users.SignOut)
 	r.Get("/users/me", users.CurrentUser)
 
 	CSRF := csrf.Protect(
-			[]byte("32-byte-long-auth-key"),
+			[]byte("vj-ytid-459k-3mck-oit"),
 			// TODO: change this to true in production
 			csrf.Secure(false),
 		)
