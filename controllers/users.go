@@ -13,7 +13,8 @@ type Users struct {
 		SignIn Template
 	}
 
-	UserService *models.UserService
+	UserService    *models.UserService
+	SessionService *models.SessionService
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
@@ -44,14 +45,17 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := http.Cookie{
-		Name:     "email",
-		Value:    user.Email,
-		Path:     "/",
-		HttpOnly: true,
+	session, err := u.SessionService.Create(user.ID)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
 	}
 
-	http.SetCookie(w, &cookie)
+	SetCookie(w, CookieSession, session.Token)
+
+	http.Redirect(w, r, "/users/me", http.StatusFound)
 
 	fmt.Fprintf(w, "User authenticated successfully: %v", user)
 }
@@ -68,17 +72,30 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	session, err := u.SessionService.Create(user.ID)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Redirect(w, r, "/signin", http.StatusFound)
+		return
+	}
+
+	SetCookie(w, CookieSession, session.Token)
+
+	http.Redirect(w, r, "/users/me", http.StatusFound)
+
 	fmt.Fprintf(w, "User created successfully: %v", user)
 
 }
 
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("email")
+	token, err := readCookie(r, CookieSession)
 
 	if err != nil {
 		fmt.Println(err)
-		fmt.Fprint(w, "No user logged in")
+		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
-	fmt.Fprintf(w, "Current user: %v", cookie.Value)
+	user, err := u.SessionService.User(token)
+	fmt.Fprintf(w, "Current user: %s\n", user.Email)
 }
