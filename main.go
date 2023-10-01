@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/csrf"
 	"github.com/trenchesdeveloper/lenslocked/controllers"
+	"github.com/trenchesdeveloper/lenslocked/migrations"
 	"github.com/trenchesdeveloper/lenslocked/models"
 	"github.com/trenchesdeveloper/lenslocked/templates"
 	"github.com/trenchesdeveloper/lenslocked/views"
@@ -30,10 +31,18 @@ func main() {
 	// get the default db parameters
 	cfg := models.DefaultPostgresConfig()
 
+	fmt.Println(cfg.String())
+
 	// open a connection to the db
 	db, err := models.NewPostgresDB(cfg)
 
 	defer db.Close()
+
+	err = models.MigrateFS(db, migrations.FS, ".")
+
+	if err != nil {
+		panic(err)
+	}
 
 	if err != nil {
 		panic(err)
