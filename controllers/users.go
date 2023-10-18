@@ -93,14 +93,9 @@ func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	user := context.User(ctx)
 
-	if user == nil {
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
 	fmt.Fprintf(w, "Current user: %s\n", user.Email)
 
-	
+
 }
 
 func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
@@ -121,4 +116,45 @@ func (u Users) SignOut(w http.ResponseWriter, r *http.Request) {
 	deleteCookie(w, CookieSession)
 
 	http.Redirect(w, r, "/signin", http.StatusFound)
+}
+
+
+type UserMiddleware struct {
+	SessionService *models.SessionService
+}
+
+func (umw UserMiddleware) SetUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := readCookie(r, CookieSession)
+
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		session, err := umw.SessionService.User(token)
+
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := context.WithUser(r.Context(), session)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (umw UserMiddleware) RequireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := context.User(r.Context())
+
+		if user == nil {
+			http.Redirect(w, r, "/signin", http.StatusFound)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+
 }
